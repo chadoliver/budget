@@ -1,0 +1,51 @@
+{
+  "name": "sequential-german",
+  "version": "0.0.1",
+  "description": "A typescript program for learning german",
+  "main": "dist/index.js",
+  "scripts": {
+    "clean": "rimraf dist",
+    "lint": "tslint --fix -p tsconfig.json -c tslint.json",
+    "prebuild": "npm run lint && npm run clean",
+    "build": "tsc -p tsconfig.json",
+    "start": "node ./dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/chadoliver/sequential-german.git"
+  },
+  "author": "Chad Oliver",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/chadoliver/sequential-german/issues"
+  },
+  "homepage": "https://gitlab.com/chadoliver/sequential-german#README",
+  "dependencies": {
+    "@types/lodash": "^4.14.116",
+    "@types/node": "^10.9.4",
+    "@types/request": "^2.47.1",
+    "express": "^4.16.3",
+    "fs-extra": "^7.0.0",
+    "glob-promise": "^3.4.0",
+    "lodash": "^4.17.10",
+    "moment": "^2.24.0",
+    "nlcst-normalize": "^2.1.2",
+    "node-id3": "^0.1.5",
+    "pg": "^7.11.0",
+    "reflect-metadata": "^0.1.12",
+    "shortid": "^2.2.13",
+    "typeorm": "^0.2.7",
+    "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.16.0",
+    "@types/moment": "^2.13.0",
+    "@types/pg": "^7.4.14",
+    "@types/shortid": "0.0.29",
+    "@types/uuid": "^3.4.4",
+    "rimraf": "^2.6.2",
+    "tslint": "^5.9.1",
+    "tslint-eslint-rules": "^5.4.0",
+    "typescript": "^3.0.3"
+  }
+}

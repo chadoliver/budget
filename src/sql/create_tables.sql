@@ -1,6 +1,3 @@
-CREATE TYPE BUDGET_LAYER AS ENUM ( 'location', 'purpose' );
-CREATE TYPE BUDGET_DOMAIN AS ENUM ( 'internal', 'external' );
-
 CREATE TABLE plans (
     id      UUID NOT NULL PRIMARY KEY,
     name    TEXT NOT NULL,
@@ -8,82 +5,118 @@ CREATE TABLE plans (
 );
 
 CREATE TABLE users (
-    id              UUID NOT NULL PRIMARY KEY,
-    full_name       text,
-    display_name    text,
-    plan            UUID REFERENCES plans(id)
+    id      UUID NOT NULL PRIMARY KEY,
+)
+
+CREATE TABLE user_changesets (
+    id                      UUID NOT NULL PRIMARY KEY,
+    user_id                 UUID REFERENCES users(id) NOT NULL,
+    hint                    USER_CHANGESET_HINT NOT NULL,
+    timestamp               TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE user_versions (
+    user_id             UUID REFERENCES users(id) NOT NULL,
+    version_number      INTEGER NOT NULL,
+    full_name           text NOT NULL,
+    display_name        text NOT NULL,
+    email               text NOT NULL,
+    plan                UUID REFERENCES plans(id) NOT NULL,
+    is_deleted          BOOLEAN NOT NULL,
+    is_most_recent      BOOLEAN NOT NULL,
+    changeset_id        UUID REFERENCES user_changesets(id) NOT NULL,
+    PRIMARY KEY (user_id, version_number)
 );
 
 CREATE TABLE budgets (
-    id                          UUID PRIMARY KEY,
-    name                        TEXT NOT NULL,
-    is_deleted                  BOOLEAN NOT NULL,
+    id      UUID NOT NULL PRIMARY KEY
+);
+
+CREATE TABLE budget_changesets (
+    id                      UUID NOT NULL PRIMARY KEY,
+    user_id                 UUID REFERENCES users(id) NOT NULL,
+    budget_id               UUID REFERENCES budgets(id) NOT NULL,
+    hint                    BUDGET_CHANGESET_HINT NOT NULL,
+    timestamp               TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE budget_versions (
+    budget_id               UUID REFERENCES budgets(id) NOT NULL,
+    version_number          INTEGER NOT NULL,
+    name                    TEXT NOT NULL,
+    is_deleted              BOOLEAN NOT NULL,
+    is_most_recent          BOOLEAN NOT NULL,
+    changeset_id            UUID REFERENCES budget_changesets(id) NOT NULL,
+    PRIMARY KEY (budget_id, version_number)
 );
 
 CREATE TABLE permissions (
-    user_id         UUID NOT NULL REFERENCES users(id) NOT NULL,
-    budget_id       UUID NOT NULL REFERENCES budgets(id) NOT NULL,
+    user_id         UUID REFERENCES users(id) NOT NULL,
+    budget_id       UUID REFERENCES budgets(id) NOT NULL,
     can_delete      BOOLEAN,
     can_share       BOOLEAN,
-    can_modify      BOOLEAN,
+    can_write       BOOLEAN,
     can_read        BOOLEAN,
     PRIMARY KEY (user_id, budget_id)
 );
 
-CREATE TABLE commits (
-    id                      UUID NOT NULL PRIMARY KEY,
-    user_id                 UUID REFERENCES users(id) NOT NULL,
-    budget_id               UUID REFERENCES budgets(id) NOT NULL,
-    commit_number           INTEGER NOT NULL,
-    acceptance_timestamp    TIMESTAMP,
-    is_most_recent          BOOLEAN NOT NULL,
-    UNIQUE (commit_number, budget_id)
-);
-
-CREATE TABLE node_hierarchy (
-    id                  UUID PRIMARY KEY,
-    label               SERIAL,
-    path                ltree
-);
-
-CREATE TABLE roots (
-    budget_id           UUID REFERENCES budgets(id) NOT NULL,
-    layer               BUDGET_LAYER,
-    domain              BUDGET_DOMAIN,
-    node_id             UUID REFERENCES node_hierarchy(id) NOT NULL,
-    PRIMARY KEY (budget_id, layer, domain)
-);
-
 CREATE TABLE nodes (
-    id                  UUID REFERENCES node_hierarchy(id) NOT NULL,
+    id                  UUID PRIMARY KEY,
+    budget_id           UUID REFERENCES budgets(id) NOT NULL,
+    path                ltree,
+    label               SERIAL,
+    UNIQUE (budget_id, path, label)
+);
+
+CREATE TABLE node_versions (
+    node_id             UUID REFERENCES nodes(id) NOT NULL,
     version_number      INTEGER NOT NULL,
     name                TEXT NOT NULL,
     opening_date        DATE NOT NULL,
     closing_date        DATE,
     is_most_recent      BOOLEAN NOT NULL,
     is_deleted          BOOLEAN NOT NULL,
-    PRIMARY KEY (id, version_number)
+    changeset_id        UUID REFERENCES budget_changesets(id) NOT NULL,
+    PRIMARY KEY (node_id, version_number)
+);
+
+CREATE TABLE roots (
+    budget_id           UUID REFERENCES budgets(id) NOT NULL,
+    domain              BUDGET_DOMAIN,
+    layer               BUDGET_LAYER,
+    node_id             UUID REFERENCES nodes(id) NOT NULL,
+    PRIMARY KEY (budget_id, layer, domain)
 );
 
 CREATE TABLE transactions (
-    id                  UUID NOT NULL,
+    id                  UUID PRIMARY KEY,
+    budget_id           UUID NOT NULL REFERENCES budgets(id) NOT NULL
+);
+
+CREATE TABLE transaction_versions (
+    transaction_id      UUID REFERENCES transactions(id) NOT NULL,
     version_number      INTEGER NOT NULL,
-    budget_id           UUID NOT NULL REFERENCES budgets(id) NOT NULL,
     date                DATE NOT NULL,
     description         TEXT NOT NULL,
     is_most_recent      BOOLEAN NOT NULL,
     is_deleted          BOOLEAN NOT NULL,
-    PRIMARY KEY (id, version_number)
+    changeset_id        UUID REFERENCES budget_changesets(id) NOT NULL,
+    PRIMARY KEY (transaction_id, version_number)
 );
 
 CREATE TABLE postings (
-    id                  UUID NOT NULL,
-    version_number      INTEGER NOT NULL,
-    node_id             UUID REFERENCES node_hierarchy(id) NOT NULL,
-    transaction_id      UUID NOT NULL,
-    amount              MONEY NOT NULL,
-    description         TEXT NOT NULL,
-    is_most_recent      BOOLEAN NOT NULL,
-    is_deleted          BOOLEAN NOT NULL,
-    PRIMARY KEY (id, version_number)
+    id                  UUID PRIMARY KEY,
+    transaction_id      UUID REFERENCES transactions(id) NOT NULL
+);
+
+CREATE TABLE posting_versions (
+    posting_id                  UUID REFERENCES postings(id) NOT NULL,
+    version_number              INTEGER NOT NULL,
+    node_id                     UUID REFERENCES nodes(id) NOT NULL,
+    amount                      MONEY NOT NULL,
+    description                 TEXT NOT NULL,
+    is_most_recent              BOOLEAN NOT NULL,
+    is_deleted                  BOOLEAN NOT NULL,
+    changeset_id                UUID REFERENCES budget_changesets(id) NOT NULL,
+    PRIMARY KEY (posting_id, version_number)
 );

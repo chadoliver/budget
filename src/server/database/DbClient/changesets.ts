@@ -4,7 +4,6 @@ import {UserChangesetHint} from '../../models/UserChangesetHint';
 import {BudgetChangesetHint} from '../../models/BudgetChangesetHint';
 import {DbClient} from '.';
 
-
 export async function createUserChangeset(
 	this: DbClient,
 	userId: string,

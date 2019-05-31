@@ -1,7 +1,7 @@
 import * as fs from 'fs-extra';
 import * as _ from 'lodash';
 import {PoolClient, QueryResult} from 'pg';
-import {LogLevel} from '../../../common/enums/LogLevel';
+import {LogLevel} from '../../../common/types/LogLevel';
 import {createBudget, deleteBudget, getBudgetById, setPermissions, updateBudget} from './budget';
 import {createNode, deleteNode, updateNode} from './node';
 import {createPlan} from './plan';

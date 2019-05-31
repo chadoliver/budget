@@ -5,7 +5,6 @@ import {Logger} from '../../src/common/util/Logger';
 
 import {Db} from '../../src/server/database/Db';
 import {getRandomString} from '../util/getRandomString';
-import {LogLevel} from '../../src/common/enums/LogLevel';
 
 describe('Database tests', () => {
 	let godDb: Db;

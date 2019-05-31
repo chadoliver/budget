@@ -1,0 +1,18 @@
+{
+	"extends": "../tsconfig.json",
+	"compilerOptions": {
+		"rootDir": "./",
+		"outDir": "../dist/tests",
+		"declaration": true,
+		"declarationDir": "../dist/tests",
+		"declarationMap": true,
+		"removeComments": true
+	},
+	"include": [
+		"./**/*.ts"
+	],
+	"references": [
+		{ "path":  "../src/server/tsconfig.json"},
+		{ "path":  "../src/common/tsconfig.json"}
+	]
+}

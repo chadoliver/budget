@@ -5,8 +5,6 @@
     "target": "ES2017",
     "lib": ["es2017"],
     "sourceMap": true,
-    "declaration": true,
-    "removeComments": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
@@ -17,7 +15,6 @@
     "strictFunctionTypes": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "outDir": "./dist",
     "esModuleInterop": true,
     "moduleResolution": "node",
     "alwaysStrict": true,
@@ -27,10 +24,7 @@
     "strictPropertyInitialization": true,
     "resolveJsonModule": true
   },
-  "exclude": ["node_modules"],
-  "include": [
-    "./typings",
-    "./src/index.ts",
-    "./test/**/*.Test.ts"
+  "exclude": [
+    "node_modules"
   ]
 }

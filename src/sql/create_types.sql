@@ -2,6 +2,7 @@ CREATE TYPE BUDGET_LAYER AS ENUM (
     'location',
     'purpose'
 );
+
 CREATE TYPE BUDGET_DOMAIN AS ENUM (
     'internal',
     'external'

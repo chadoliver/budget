@@ -5,8 +5,8 @@ CREATE TABLE plans (
 );
 
 CREATE TABLE users (
-    id      UUID NOT NULL PRIMARY KEY,
-)
+    id      UUID NOT NULL PRIMARY KEY
+);
 
 CREATE TABLE user_changesets (
     id                      UUID NOT NULL PRIMARY KEY,

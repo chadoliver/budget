@@ -1,0 +1,19 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"rootDir": "./",
+		"outDir": "../../dist/src/server",
+		"declaration": true,
+		"declarationDir": "../../dist/src/server",
+		"declarationMap": true,
+		"removeComments": true,
+		"composite": true
+	},
+	"include": [
+		"./**/*.ts",
+		"./**/*.json"
+	],
+	"references": [
+		{ "path":  "../common/tsconfig.json"}
+	]
+}

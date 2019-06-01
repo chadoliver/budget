@@ -1,14 +1,30 @@
 import {BudgetChangesetHint} from '../../models/BudgetChangesetHint';
 import {createBudgetChangeset} from './changesets';
 import {DbClient, IBudgetUser, IVersionedEntity} from '../DbClient';
+import {IUserEntity} from './users';
 
 //// Interfaces
+
+interface INodeDatabaseRow {
+	id: string;
+	budget_id: string;
+	path: string;
+	label: string;
+	name: string;
+	opening_date: Date;
+	closing_date: Date;
+	version_number: number;
+	is_deleted: boolean;
+	is_most_recent: boolean;
+	changeset_id: string;
+}
 
 interface INodePrimaryKey {
 	nodeId: string;
 }
 
 interface INodeImmutable extends INodePrimaryKey {
+	budgetId: string;
 	parentNodeId: string;
 }
 
@@ -24,7 +40,7 @@ export interface IUpdateNode extends INodeVersion, IBudgetUser {}
 
 export interface IDeleteNode extends INodePrimaryKey, IBudgetUser {}
 
-export interface IEntityNode extends INodeImmutable, INodeVersion, IVersionedEntity {}
+export interface INodeEntity extends INodeImmutable, INodeVersion, IVersionedEntity {}
 
 
 //// Methods for the DbClient class
@@ -137,5 +153,20 @@ async function throwErrorIfIsRootNode(
 
 	if (result.rows[0].exists) {
 		throw new Error(message);
+	}
+}
+
+function getNodeEntityFromDatabaseRow(row: INodeDatabaseRow): INodeEntity {
+	return {
+		nodeId: row.id,
+		budgetId: row.budget_id,
+		parentNodeId: '',			// TODO: need to figure out how to handle this.
+		name: row.name,
+		openingDate: row.opening_date,
+		closingDate: row.closing_date,
+		versionNumber: row.version_number,
+		isDeleted: row.is_deleted,
+		isMostRecent: row.is_most_recent,
+		changesetId: row.changeset_id
 	}
 }

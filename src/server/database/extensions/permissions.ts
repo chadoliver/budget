@@ -46,7 +46,8 @@ export async function getPermissionsByUserAndBudget(
 			can_write AS "canWrite",
 			can_read AS "canRead",
 		FROM permissions
-		WHERE userId = ${userId} AND budgetId = ${budgetId}`;
+		WHERE user_id = ${userId} AND budget_id = ${budgetId}`;
+
 	return (rowCount > 1) ? rows[0] : null;
 }
 
@@ -57,7 +58,7 @@ export async function assertUserCanReadBudget(
 	const {rows, rowCount} = await this.parameterisedQuery`
 		SELECT can_read
 		FROM permissions
-		WHERE userId = ${userId} AND budgetId = ${budgetId}`;
+		WHERE user_id = ${userId} AND budget_id = ${budgetId}`;
 
 	if (rowCount === 0 || !rows[0].can_read) {
 		throw new Error(`User ${userId} cannot read budget ${budgetId}`);
@@ -71,7 +72,7 @@ export async function assertUserCanWriteToBudget(
 	const {rows, rowCount} = await this.parameterisedQuery`
 		SELECT can_write
 		FROM permissions
-		WHERE userId = ${userId} AND budgetId = ${budgetId}`;
+		WHERE user_id = ${userId} AND budget_id = ${budgetId}`;
 
 	if (rowCount === 0 || !rows[0].can_write) {
 		throw new Error(`User ${userId} cannot write to budget ${budgetId}`);
@@ -85,7 +86,8 @@ export async function assertUserCanShareBudget(
 	const {rows, rowCount} = await this.parameterisedQuery`
 		SELECT can_share
 		FROM permissions
-		WHERE userId = ${userId} AND budgetId = ${budgetId}`;
+		WHERE user_id = ${userId} AND budget_id = ${budgetId}`;
+
 	if (rowCount === 0 || !rows[0].can_share) {
 		throw new Error(`User ${userId} cannot share budget ${budgetId}`);
 	}
@@ -98,7 +100,7 @@ export async function assertUserCanDeleteBudget(
 	const {rows, rowCount} = await this.parameterisedQuery`
 		SELECT can_delete
 		FROM permissions
-		WHERE userId = ${userId} AND budgetId = ${budgetId}`;
+		WHERE user_id = ${userId} AND budget_id = ${budgetId}`;
 
 	if (rowCount === 0 || !rows[0].can_delete) {
 		throw new Error(`User ${userId} cannot delete budget ${budgetId}`);

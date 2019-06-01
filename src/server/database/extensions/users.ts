@@ -1,8 +1,22 @@
 import {UserChangesetHint} from '../../models/UserChangesetHint';
+import {IBudgetEntity} from './budgets';
 import {createUserChangeset} from './changesets';
 import {DbClient, IVersionedEntity} from '../DbClient';
 
 //// Interfaces
+
+interface IUserDatabaseRow {
+	id: string;
+	full_name: string;
+	display_name: string;
+	email: string;
+	plan: string;
+	version_number: number;
+	is_deleted: boolean;
+	is_most_recent: boolean;
+	changeset_id: string;
+}
+
 
 interface IUserPrimaryKey {
 	userId: string;
@@ -102,5 +116,19 @@ async function acquireLockOnUser(this: DbClient, userId: string) {
 	// Throw an error if the user doesn't exist
 	if (rowCount === 0) {
 		throw new Error('Cannot find matching user');
+	}
+}
+
+function getUserEntityFromDatabaseRow(row: IUserDatabaseRow): IUserEntity {
+	return {
+		userId: row.id,
+		fullName: row.full_name,
+		displayName: row.display_name,
+		email: row.email,
+		plan: row.plan,
+		versionNumber: row.version_number,
+		isDeleted: row.is_deleted,
+		isMostRecent: row.is_most_recent,
+		changesetId: row.changeset_id
 	}
 }

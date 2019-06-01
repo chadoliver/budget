@@ -15,6 +15,17 @@ import {
 
 //// Interfaces
 
+interface ITransactionDatabaseRow {
+	id: string;
+	budget_id: string;
+	date: Date;
+	description: string;
+	version_number: number;
+	is_deleted: boolean;
+	is_most_recent: boolean;
+	changeset_id: string;
+}
+
 interface ITransactionPrimaryKey {
 	transactionId: string;
 }
@@ -120,13 +131,13 @@ export async function getTransactionById(
 	const {rows} = await this.parameterisedQuery`
 		SELECT *
 		FROM current_transactions
-		WHERE id = ${transactionId}`;
+		WHERE transactionId = ${transactionId}`;
 
 	if (_.isEmpty(rows)) {
 		return null;
 	} else {
 		return {
-			...rows[0],
+			...getTransactionEntityFromDatabaseRow(rows[0]),
 			postings: await getPostingsByTransactionId(this, transactionId)
 		};
 	}
@@ -146,5 +157,18 @@ async function acquireLockOnTransaction(
 	// Throw an error if the user doesn't exist
 	if (rowCount === 0) {
 		throw new Error('Cannot find matching budget transaction');
+	}
+}
+
+function getTransactionEntityFromDatabaseRow(row: ITransactionDatabaseRow): Omit<ITransactionEntity, 'postings'> {
+	return {
+		transactionId: row.id,
+		budgetId: row.budget_id,
+		date: row.date,
+		description: row.description,
+		versionNumber: row.version_number,
+		isDeleted: row.is_deleted,
+		isMostRecent: row.is_most_recent,
+		changesetId: row.changeset_id
 	}
 }

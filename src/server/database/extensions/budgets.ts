@@ -9,6 +9,15 @@ import {DbClient, IBudgetUser, IUser, IVersionedEntity} from '../DbClient';
 
 //// Interfaces
 
+interface IBudgetDatabaseRow {
+	id: string;
+	name: string;
+	version_number: number;
+	is_deleted: boolean;
+	is_most_recent: boolean;
+	changeset_id: string;
+}
+
 interface IBudgetPrimaryKey {
 	budgetId: string;
 }
@@ -137,13 +146,13 @@ export async function deleteBudget(
 export async function getBudgetById(
 	this: DbClient,
 	{userId, budgetId}: IBudgetUser
-): Promise<IBudgetEntity> {
+): Promise<IBudgetEntity | null> {
 	await this.assertUserCanReadBudget({userId, budgetId});
 	const {rows, rowCount} = await this.parameterisedQuery`
 		SELECT *
 		FROM current_budgets
-		WHERE id = ${budgetId}`;
-	return (rowCount > 1) ? rows[0] : null;
+		WHERE budget_id = ${budgetId}`;
+	return (rowCount === 0) ? null : getBudgetEntityFromDatabaseRow(rows[0]);
 }
 
 export async function getReadableBudgetsByUser(
@@ -157,7 +166,7 @@ export async function getReadableBudgetsByUser(
 			LEFT JOIN permissions p ON p.budget_id = b.id
 		WHERE 
 			p.user_id = ${userId} AND p.can_read = true`;
-	return rows;
+	return rows.map(getBudgetEntityFromDatabaseRow);
 }
 
 
@@ -171,5 +180,16 @@ async function acquireLockOnBudget(client: DbClient, budgetId: string) {
 	// Throw an error if the budget doesn't exist
 	if (rowCount === 0) {
 		throw new Error('Cannot find matching budget');
+	}
+}
+
+function getBudgetEntityFromDatabaseRow(row: IBudgetDatabaseRow): IBudgetEntity {
+	return {
+		budgetId: row.id,
+		name: row.name,
+		versionNumber: row.version_number,
+		isDeleted: row.is_deleted,
+		isMostRecent: row.is_most_recent,
+		changesetId: row.changeset_id
 	}
 }

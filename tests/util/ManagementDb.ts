@@ -13,10 +13,10 @@ export class ManagementDb extends Db {
 		return new TestDb(name);
 	}
 
-	public async destroyDatabase(db: Db): Promise<void> {
+	public async dropDatabase(db: Db): Promise<void> {
 		await db.disconnect();
 		await this.withClient(async client => {
-			await client.literalQuery `DROP DATABASE ${db.name}`;
+			// await client.literalQuery `DROP DATABASE ${db.name}`;
 		});
 	}
 

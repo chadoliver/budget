@@ -1,9 +1,22 @@
 import * as _ from 'lodash';
 
 import {DbClient, IVersionedEntity} from '../DbClient';
+import {IBudgetEntity} from './budgets';
 
 
 //// Interfaces
+
+interface IPostingDatabaseRow {
+	id: string;
+	transaction_id: string;
+	node_id: string;
+	amount: number;
+	description: string;
+	version_number: number;
+	is_deleted: boolean;
+	is_most_recent: boolean;
+	changeset_id: string;
+}
 
 interface IPostingPrimaryKey {
 	postingId: string;
@@ -80,8 +93,8 @@ export async function getPostingsByTransactionId(
 	const {rows} = await client.parameterisedQuery`
 		SELECT *
 		FROM current_postings
-		WHERE transaction_id = ${transactionId}`;
-	return rows;
+		WHERE transactionId = ${transactionId}`;
+	return rows.map(getPostingEntityFromDatabaseRow);
 }
 
 
@@ -140,4 +153,18 @@ export async function deletePosting(
 			(posting_id, version_number, node_id, amount, description, is_most_recent, is_deleted, changeset_id)
 		VALUES
 			(${postingId}, prev.version_number + 1, prev.node_id, prev.amount, prev.description, true, true, ${changesetId})`;
+}
+
+function getPostingEntityFromDatabaseRow(row: IPostingDatabaseRow): IPostingEntity {
+	return {
+		postingId: row.id,
+		transactionId: row.transaction_id,
+		nodeId: row.node_id,
+		amount: row.amount,
+		description: row.description,
+		versionNumber: row.version_number,
+		isDeleted: row.is_deleted,
+		isMostRecent: row.is_most_recent,
+		changesetId: row.changeset_id
+	}
 }

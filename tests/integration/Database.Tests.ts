@@ -49,7 +49,7 @@ describe('Database tests', () => {
 	});
 
 	after(async () => {
-		await managementDb.destroyDatabase(testDb);
+		await managementDb.dropDatabase(testDb);
 		await managementDb.disconnect();
 	});
 

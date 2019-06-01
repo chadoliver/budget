@@ -25,9 +25,9 @@ export class Db {
 		callback:  (client: DbClient) => void | Promise<void>
 	): Promise<void> {
 		const poolClient = await this.pool.connect();
-		const dbClient = new DbClient(poolClient);
 		try {
-			await callback(dbClient);
+			const client = new DbClient(poolClient);
+			await callback(client);
 		} finally {
 			poolClient.release();
 		}

@@ -3,37 +3,23 @@ import 'mocha';
 import * as uuid from 'uuid';
 import {Logger} from '../../src/common/util/Logger';
 
-import {Db} from '../../src/server/database/Db';
 import {getRandomString} from '../util/getRandomString';
+import {ManagementDb} from '../util/ManagementDb';
+import {TestDb} from '../util/TestDb';
 
 describe('Database tests', () => {
-	let godDb: Db;
-	let testDb: Db;
+	let managementDb: ManagementDb;
+	let testDb: TestDb;
 	let userId: string;
 	let budgetId: string;
 
 	before(async () => {
 		const testDbName = `budget_test_${getRandomString(10)}`;
-		console.log(`Test database: ${testDbName}\n`);
+		Logger.log(`Test database: ${testDbName}\n`);
 
-		godDb = new Db('postgres');
-		await godDb.withClient(async client => {
-			await client.literalQuery `CREATE DATABASE ${testDbName}`;
-		});
-
-		testDb = new Db(testDbName);
-		await testDb.withClient(async client => {
-			const paths = [
-				'../../../src/sql/extensions.sql',
-				'../../../src/sql/create_types.sql',
-				'../../../src/sql/create_tables.sql',
-				'../../../src/sql/create_views.sql'
-			];
-
-			for (const path of paths) {
-				await client.executeFile(path);
-			}
-		});
+		managementDb = new ManagementDb();
+		testDb = await managementDb.createDatabase(testDbName);
+		await testDb.createDatabaseTables();
 	});
 
 	beforeEach(async () => {
@@ -63,17 +49,13 @@ describe('Database tests', () => {
 	});
 
 	after(async () => {
-		await testDb.disconnect();
-
-		await godDb.withClient(async client => {
-			await client.literalQuery `DROP DATABASE ${testDb.name}`;
-		});
-		await godDb.disconnect();
+		await managementDb.destroyDatabase(testDb);
+		await managementDb.disconnect();
 	});
 
 	it('Can read the current state of a budget', async () => {
 		await testDb.withClient(async client => {
-			const budgetEntity = await client.getBudgetById({budgetId});
+			const budgetEntity = await client.getBudgetById({userId, budgetId});
 			Logger.log('budget:', budgetEntity);
 		});
 	});

@@ -1,20 +1,19 @@
 import * as _ from 'lodash';
 
 import {DbClient, IVersionedEntity} from '../DbClient';
-import {ITransactionPrimaryKey} from './transactions';
 
 
 //// Interfaces
 
-export interface IPostingPrimaryKey {
+interface IPostingPrimaryKey {
 	postingId: string;
 }
 
-export interface IPostingImmutable extends IPostingPrimaryKey {
+interface IPostingImmutable extends IPostingPrimaryKey {
 	transactionId: string;
 }
 
-export interface IPostingVersion extends  IPostingPrimaryKey {
+interface IPostingVersion extends  IPostingPrimaryKey {
 	nodeId: string;
 	amount: number;
 	description: string;
@@ -31,7 +30,7 @@ export interface IPostingEntity extends IPostingImmutable, IPostingVersion, IVer
 export async function createPostingsForTransaction(
 	client: DbClient,
 	changesetId: string,
-	{transactionId}: ITransactionPrimaryKey,
+	transactionId: string,
 	postings: IPostingVersion[]
 ): Promise<void> {
 	for (const posting of postings) {
@@ -42,7 +41,7 @@ export async function createPostingsForTransaction(
 export async function updatePostingsForTransaction(
 	client: DbClient,
 	changesetId: string,
-	{transactionId}: ITransactionPrimaryKey,
+	transactionId: string,
 	newPostings: IPostingVersion[]
 ): Promise<void> {
 	const oldPostings = await getPostingsByTransactionId(client, transactionId);
@@ -66,12 +65,23 @@ export async function updatePostingsForTransaction(
 export async function deletePostingsForTransaction(
 	client: DbClient,
 	changesetId: string,
-	{transactionId}: ITransactionPrimaryKey
+	transactionId: string
 ): Promise<void> {
 	const currentPostings = await getPostingsByTransactionId(client, transactionId);
 	for (const posting of currentPostings) {
 		await deletePosting(client, changesetId, posting);
 	}
+}
+
+export async function getPostingsByTransactionId(
+	client: DbClient,
+	transactionId: string
+): Promise<IPostingEntity[]> {
+	const {rows} = await client.parameterisedQuery`
+		SELECT *
+		FROM current_postings
+		WHERE transaction_id = ${transactionId}`;
+	return rows;
 }
 
 
@@ -130,15 +140,4 @@ export async function deletePosting(
 			(posting_id, version_number, node_id, amount, description, is_most_recent, is_deleted, changeset_id)
 		VALUES
 			(${postingId}, prev.version_number + 1, prev.node_id, prev.amount, prev.description, true, true, ${changesetId})`;
-}
-
-export async function getPostingsByTransactionId(
-	client: DbClient,
-	transactionId: string
-): Promise<IPostingEntity[]> {
-	const {rows} = await client.parameterisedQuery`
-		SELECT *
-		FROM current_postings
-		WHERE transaction_id = ${transactionId}`;
-	return rows;
 }

@@ -13,11 +13,11 @@ import {createBudget, deleteBudget, getBudgetById, getReadableBudgetsByUser, upd
 import {createNode, deleteNode, updateNode} from './extensions/nodes';
 import {createPlan, readPlanById} from './extensions/plans';
 import {
-	createTransactionAndPostings,
-	deleteTransactionAndPostings,
-	getTransactionAndPostingsById,
-	updateTransactionAndPostings
-} from './extensions/transactionAndPostings';
+	createTransaction,
+	deleteTransaction,
+	getTransactionById,
+	updateTransaction
+} from './extensions/transactions';
 import {createUser, deleteUser, updateUser} from './extensions/users';
 import {Logger} from '../../common/util/Logger';
 
@@ -124,8 +124,8 @@ export class DbClient {
 	public updateNode = updateNode;
 	public deleteNode = deleteNode;
 
-	public createTransactionAndPostings = createTransactionAndPostings;
-	public updateTransactionAndPostings = updateTransactionAndPostings;
-	public deleteTransactionAndPostings = deleteTransactionAndPostings;
-	public getTransactionAndPostingsById = getTransactionAndPostingsById;
+	public createTransaction = createTransaction;
+	public updateTransaction = updateTransaction;
+	public deleteTransaction = deleteTransaction;
+	public getTransactionById = getTransactionById;
 }

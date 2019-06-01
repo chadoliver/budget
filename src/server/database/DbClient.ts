@@ -1,20 +1,35 @@
 import * as fs from 'fs-extra';
 import * as _ from 'lodash';
 import {PoolClient, QueryResult} from 'pg';
-import {LogLevel} from '../../../common/types/LogLevel';
-import {createBudget, deleteBudget, getBudgetById, setPermissions, updateBudget} from './budget';
-import {createNode, deleteNode, updateNode} from './node';
-import {createPlan} from './plan';
-import {createTransactionAndPostings, deleteTransactionAndPostings, updateTransactionAndPostings} from './transactionAndPostings';
-import {createUser, deleteUser, updateUser} from './user';
-import {Logger} from '../../../common/util/Logger';
+import {
+	getPermissionsByUserAndBudget,
+	setPermissions,
+	assertUserCanDeleteBudget,
+	assertUserCanReadBudget,
+	assertUserCanShareBudget,
+	assertUserCanWriteToBudget
+} from './extensions/permissions';
+import {createBudget, deleteBudget, getBudgetById, getReadableBudgetsByUser, updateBudget} from './extensions/budgets';
+import {createNode, deleteNode, updateNode} from './extensions/nodes';
+import {createPlan, readPlanById} from './extensions/plans';
+import {
+	createTransactionAndPostings,
+	deleteTransactionAndPostings,
+	getTransactionAndPostingsById,
+	updateTransactionAndPostings
+} from './extensions/transactionAndPostings';
+import {createUser, deleteUser, updateUser} from './extensions/users';
+import {Logger} from '../../common/util/Logger';
 
-export interface IBudgetChangeset {
+export interface IUser {
 	userId: string;
+}
+
+export interface IBudgetUser extends IUser {
 	budgetId: string;
 }
 
-export interface IReadVersioned {
+export interface IVersionedEntity {
 	versionNumber: number;
 	isDeleted: boolean;
 	isMostRecent: boolean;
@@ -86,7 +101,14 @@ export class DbClient {
 	}
 
 	public createPlan = createPlan;
+	public readPlanById = readPlanById;
+
 	public setPermissions = setPermissions;
+	public getPermissionsByUserAndBudget = getPermissionsByUserAndBudget;
+	public assertUserCanReadBudget = assertUserCanReadBudget;
+	public assertUserCanWriteToBudget = assertUserCanWriteToBudget;
+	public assertUserCanShareBudget = assertUserCanShareBudget;
+	public assertUserCanDeleteBudget = assertUserCanDeleteBudget;
 
 	public createUser = createUser;
 	public updateUser = updateUser;
@@ -96,6 +118,7 @@ export class DbClient {
 	public updateBudget = updateBudget;
 	public deleteBudget = deleteBudget;
 	public getBudgetById = getBudgetById;
+	public getReadableBudgetsByUser = getReadableBudgetsByUser;
 
 	public createNode = createNode;
 	public updateNode = updateNode;
@@ -104,4 +127,5 @@ export class DbClient {
 	public createTransactionAndPostings = createTransactionAndPostings;
 	public updateTransactionAndPostings = updateTransactionAndPostings;
 	public deleteTransactionAndPostings = deleteTransactionAndPostings;
+	public getTransactionAndPostingsById = getTransactionAndPostingsById;
 }

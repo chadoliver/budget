@@ -1,14 +1,16 @@
 import {UserChangesetHint} from '../../models/UserChangesetHint';
 import {createUserChangeset} from './changesets';
-import {DbClient, IReadVersioned} from '.';
+import {DbClient, IVersionedEntity} from '../DbClient';
 
-interface IUserId {
+//// Interfaces
+
+interface IUserPrimaryKey {
 	userId: string;
 }
 
-interface IUserImmutable extends IUserId {}
+interface IUserImmutable extends IUserPrimaryKey {}
 
-interface IUserVersion extends IUserId {
+interface IUserVersion extends IUserPrimaryKey {
 	fullName: string;
 	displayName: string;
 	email: string;
@@ -19,9 +21,12 @@ export interface ICreateUser extends IUserImmutable, IUserVersion {}
 
 export interface IUpdateUser extends IUserVersion {}
 
-export interface IDeleteUser extends IUserId {}
+export interface IDeleteUser extends IUserPrimaryKey {}
 
-export interface IReadUser extends IUserVersion, IReadVersioned {}
+export interface IUserEntity extends IUserImmutable, IUserVersion, IVersionedEntity {}
+
+
+//// Methods for the DbClient class
 
 export async function createUser(
 	this: DbClient,
@@ -34,7 +39,7 @@ export async function createUser(
 				VALUES
 					(${userId})`;
 
-		const changesetId = await createUserChangeset.call(this, userId, UserChangesetHint.CreateUser);
+		const changesetId = await createUserChangeset(this, userId, UserChangesetHint.CreateUser);
 
 		await this.parameterisedQuery`
 				INSERT INTO user_versions
@@ -50,7 +55,7 @@ export async function updateUser(
 ) {
 	await this.withDatabaseTransaction(async () => {
 		await acquireLockOnUser.call(this, userId);
-		const changesetId = await createUserChangeset.call(this, userId, UserChangesetHint.UpdateUser);
+		const changesetId = await createUserChangeset(this, userId, UserChangesetHint.UpdateUser);
 		await this.parameterisedQuery`
 			WITH prev AS (
 				UPDATE user_versions
@@ -71,7 +76,7 @@ export async function deleteUser(
 ) {
 	await this.withDatabaseTransaction(async () => {
 		await acquireLockOnUser.call(this, userId);
-		const changesetId = await createUserChangeset.call(this, userId, UserChangesetHint.DeleteUser);
+		const changesetId = await createUserChangeset(this, userId, UserChangesetHint.DeleteUser);
 		await this.parameterisedQuery`
 			WITH prev AS (
 				UPDATE user_versions
@@ -85,6 +90,9 @@ export async function deleteUser(
 				(${userId}, prev.version_number + 1, prev.full_name, prev.display_name, prev.email, prev.plan, true, true, ${changesetId})`;
 	});
 }
+
+
+//// Helper functions
 
 async function acquireLockOnUser(this: DbClient, userId: string) {
 	// Acquire a lock on the row representing the user

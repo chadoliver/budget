@@ -2,15 +2,15 @@ import * as uuid from 'uuid';
 
 import {UserChangesetHint} from '../../models/UserChangesetHint';
 import {BudgetChangesetHint} from '../../models/BudgetChangesetHint';
-import {DbClient} from '.';
+import {DbClient} from '../DbClient';
 
 export async function createUserChangeset(
-	this: DbClient,
+	client: DbClient,
 	userId: string,
 	hint: UserChangesetHint,
 ): Promise<string> {
 	const changesetId = uuid.v4();
-	await this.parameterisedQuery`
+	await client.parameterisedQuery`
 		INSERT INTO user_changesets(id, user_id, hint)
 		VALUES(${changesetId}, ${userId}, ${hint})`;
 
@@ -18,13 +18,13 @@ export async function createUserChangeset(
 }
 
 export async function createBudgetChangeset(
-	this: DbClient,
+	client: DbClient,
 	userId: string,
 	budgetId: string,
 	hint: BudgetChangesetHint,
 ): Promise<string> {
 	const changesetId = uuid.v4();
-	await this.parameterisedQuery`
+	await client.parameterisedQuery`
 		INSERT INTO budget_changesets(id, user_id, budget_id, hint)
 		VALUES(${changesetId}, ${userId}, ${budgetId}, ${hint})`;
 

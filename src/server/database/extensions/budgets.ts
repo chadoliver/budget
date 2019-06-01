@@ -4,48 +4,28 @@ import {BudgetChangesetHint} from '../../models/BudgetChangesetHint';
 import {Domain} from '../../models/Domain';
 import {Layer} from '../../models/Layer';
 import {createBudgetChangeset} from './changesets';
-import {DbClient, IBudgetChangeset, IReadVersioned} from '.';
+import {DbClient, IBudgetUser, IUser, IVersionedEntity} from '../DbClient';
 
-export interface IPermission {
-	userId: string;
-	budgetId: string,
-	canDelete: boolean,
-	canShare: boolean,
-	canWrite: boolean,
-	canRead: boolean,
-}
 
-interface IBudgetId {
+//// Interfaces
+
+interface IBudgetPrimaryKey {
 	budgetId: string;
 }
 
-interface IBudgetImmutable extends IBudgetId {}
+interface IBudgetImmutable extends IBudgetPrimaryKey {}
 
-interface IBudgetVersion extends IBudgetId {
+interface IBudgetVersion extends IBudgetPrimaryKey {
 	name: string;
 }
 
-export interface ICreateBudget extends IBudgetImmutable, IBudgetVersion, IBudgetChangeset {}
+export interface ICreateBudget extends IBudgetImmutable, IBudgetVersion, IBudgetUser {}
+export interface IUpdateBudget extends IBudgetVersion, IBudgetUser {}
+export interface IDeleteBudget extends IBudgetPrimaryKey, IBudgetUser {}
+export interface IBudgetEntity extends IBudgetImmutable, IBudgetVersion, IVersionedEntity {}
 
-export interface IUpdateBudget extends IBudgetVersion, IBudgetChangeset {}
 
-export interface IDeleteBudget extends IBudgetId, IBudgetChangeset {}
-
-export interface IReadBudget extends IBudgetVersion, IReadVersioned {}
-
-export async function setPermissions(
-	this: DbClient,
-	{userId, budgetId, canDelete, canShare, canWrite, canRead}: IPermission
-): Promise<void> {
-	await this.parameterisedQuery`
-		INSERT INTO permissions
-			(user_id, budget_id, can_delete, can_share, can_write, can_read)
-		VALUES
-			(${userId}, ${budgetId}, ${canDelete}, ${canShare}, ${canWrite}, ${canRead})
-		ON CONFLICT (user_id, budget_id)
-			DO UPDATE
-			SET can_delete = ${canDelete}, can_share = ${canShare}, can_write = ${canWrite}, can_read = ${canRead}`;
-}
+//// Methods for the DbClient class
 
 export async function createBudget(
 	this: DbClient,
@@ -58,15 +38,13 @@ export async function createBudget(
 			VALUES
 				(${budgetId})`;
 
-		const changesetId = await createBudgetChangeset.call(this, userId, budgetId, BudgetChangesetHint.CreateBudget);
-		await this.setPermissions({
-			budgetId,
-			userId,
-			canDelete: true,
-			canShare: true,
-			canWrite: true,
-			canRead: true,
-		});
+		const changesetId = await createBudgetChangeset(this, userId, budgetId, BudgetChangesetHint.CreateBudget);
+
+		await this.parameterisedQuery`
+			INSERT INTO permissions
+				(user_id, budget_id, can_delete, can_share, can_write, can_read)
+			VALUES
+				(${userId}, ${budgetId}, ${true}, ${true}, ${true}, ${true})`;
 
 		await this.parameterisedQuery`
 			INSERT INTO budget_versions
@@ -113,8 +91,11 @@ export async function updateBudget(
 	{budgetId, userId, name}: IUpdateBudget
 ): Promise<void> {
 	await this.withDatabaseTransaction(async () => {
-		await acquireLockOnBudget.call(this, budgetId);
-		const changesetId = await createBudgetChangeset.call(this, userId, budgetId, BudgetChangesetHint.UpdateBudget);
+
+		await this.assertUserCanWriteToBudget({userId, budgetId});
+		await acquireLockOnBudget(this, budgetId);
+		const changesetId = await createBudgetChangeset(this, userId, budgetId, BudgetChangesetHint.UpdateBudget);
+
 		await this.parameterisedQuery`
 			WITH prev AS (
 				UPDATE budget_versions
@@ -134,8 +115,11 @@ export async function deleteBudget(
 	{budgetId, userId}: IDeleteBudget
 ): Promise<void> {
 	await this.withDatabaseTransaction(async () => {
-		await acquireLockOnBudget.call(this, budgetId);
-		const changesetId = await createBudgetChangeset.call(this, userId, budgetId, BudgetChangesetHint.DeleteBudget);
+
+		await this.assertUserCanDeleteBudget({userId, budgetId});
+		await acquireLockOnBudget(this, budgetId);
+		const changesetId = await createBudgetChangeset(this, userId, budgetId, BudgetChangesetHint.DeleteBudget);
+
 		await this.parameterisedQuery`
 			WITH prev AS (
 				UPDATE budget_versions
@@ -152,8 +136,9 @@ export async function deleteBudget(
 
 export async function getBudgetById(
 	this: DbClient,
-	{budgetId}: IBudgetId
-): Promise<any | null> {
+	{userId, budgetId}: IBudgetUser
+): Promise<IBudgetEntity> {
+	await this.assertUserCanReadBudget({userId, budgetId});
 	const {rows, rowCount} = await this.parameterisedQuery`
 		SELECT *
 		FROM current_budgets
@@ -161,10 +146,27 @@ export async function getBudgetById(
 	return (rowCount > 1) ? rows[0] : null;
 }
 
-async function acquireLockOnBudget(this: DbClient, budgetId: string) {
+export async function getReadableBudgetsByUser(
+	this: DbClient,
+	{userId}: IUser
+): Promise<IBudgetEntity[]> {
+	const {rows} = await this.parameterisedQuery`
+		SELECT *
+		FROM 
+			current_budgets b
+			LEFT JOIN permissions p ON p.budget_id = b.id
+		WHERE 
+			p.user_id = ${userId} AND p.can_read = true`;
+	return rows;
+}
+
+
+//// Helper functions
+
+async function acquireLockOnBudget(client: DbClient, budgetId: string) {
 	// Acquire a lock on the row representing the budget
-	const {rowCount} = await this.parameterisedQuery`
-			SELECT * FROM budgets WHERE id = ${budgetId} FOR UPDATE`;
+	const {rowCount} = await client.parameterisedQuery`
+		SELECT * FROM budgets WHERE id = ${budgetId} FOR UPDATE`;
 
 	// Throw an error if the budget doesn't exist
 	if (rowCount === 0) {

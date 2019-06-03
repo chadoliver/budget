@@ -1,3 +1,4 @@
+import {QueryResult} from 'pg';
 import * as uuid from 'uuid';
 
 import {UserChangesetHint} from '../../models/UserChangesetHint';
@@ -29,4 +30,13 @@ export async function createBudgetChangeset(
 		VALUES(${changesetId}, ${userId}, ${budgetId}, ${hint})`;
 
 	return changesetId;
+}
+
+export async function singleRow<T>(queryResult: QueryResult | Promise<QueryResult>): Promise<T> {
+	const {rowCount, rows} = await queryResult;
+	if (rowCount === 1) {
+		return rows[0];
+	} else {
+		throw new Error(`Expected a single row, but got ${rowCount} rows instead`);
+	}
 }

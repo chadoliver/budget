@@ -10,7 +10,7 @@ import {
 	assertUserCanWriteToBudget
 } from './extensions/permissions';
 import {createBudget, deleteBudget, getBudgetById, getReadableBudgetsByUser, updateBudget} from './extensions/budgets';
-import {createNode, deleteNode, updateNode} from './extensions/nodes';
+import {createChildNode, createRootNode, deleteNode, getNodeById, getNodesForBudget, getRootNode, updateNode} from './extensions/nodes';
 import {createPlan, readPlanById} from './extensions/plans';
 import {
 	createTransaction,
@@ -120,9 +120,13 @@ export class DbClient {
 	public getBudgetById = getBudgetById;
 	public getReadableBudgetsByUser = getReadableBudgetsByUser;
 
-	public createNode = createNode;
+	public createRootNode = createRootNode;
+	public createChildNode = createChildNode;
 	public updateNode = updateNode;
 	public deleteNode = deleteNode;
+	public getNodeById = getNodeById;
+	public getNodesForBudget = getNodesForBudget;
+	public getRootNode = getRootNode;
 
 	public createTransaction = createTransaction;
 	public updateTransaction = updateTransaction;

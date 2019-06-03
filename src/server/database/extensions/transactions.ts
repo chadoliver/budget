@@ -2,7 +2,7 @@ import * as _ from 'lodash';
 
 import {BudgetChangesetHint} from '../../models/BudgetChangesetHint';
 import {DbClient, IBudgetUser, IVersionedEntity} from '../DbClient';
-import {createBudgetChangeset} from './changesets';
+import {createBudgetChangeset} from './utils';
 import {
 	createPostingsForTransaction,
 	deletePostingsForTransaction, getPostingsByTransactionId,

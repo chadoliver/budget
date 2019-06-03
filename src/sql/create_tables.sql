@@ -64,8 +64,8 @@ CREATE TABLE nodes (
     id                  UUID PRIMARY KEY,
     budget_id           UUID REFERENCES budgets(id) NOT NULL,
     path                ltree,
-    label               SERIAL,
-    UNIQUE (budget_id, path, label)
+    label               TEXT NOT NULL,
+    UNIQUE (budget_id, label)
 );
 
 CREATE TABLE node_versions (

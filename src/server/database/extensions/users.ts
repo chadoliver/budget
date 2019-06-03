@@ -1,6 +1,6 @@
 import {UserChangesetHint} from '../../models/UserChangesetHint';
 import {IBudgetEntity} from './budgets';
-import {createUserChangeset} from './changesets';
+import {createUserChangeset} from './utils';
 import {DbClient, IVersionedEntity} from '../DbClient';
 
 //// Interfaces

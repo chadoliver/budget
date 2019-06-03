@@ -9,6 +9,7 @@ export class TestDb extends Db {
 		const paths = [
 			'../../../src/sql/extensions.sql',
 			'../../../src/sql/create_types.sql',
+			'../../../src/sql/create_sequences.sql',
 			'../../../src/sql/create_tables.sql',
 			'../../../src/sql/create_views.sql'
 		];

@@ -1,9 +1,11 @@
 import * as uuid from 'uuid';
+import {Logger} from '../../../common/util/Logger';
 
 import {BudgetChangesetHint} from '../../models/BudgetChangesetHint';
 import {Domain} from '../../models/Domain';
 import {Layer} from '../../models/Layer';
-import {createBudgetChangeset} from './changesets';
+import {createRootNode} from './nodes';
+import {createBudgetChangeset, singleRow} from './utils';
 import {DbClient, IBudgetUser, IUser, IVersionedEntity} from '../DbClient';
 
 
@@ -66,23 +68,10 @@ export async function createBudget(
 		const externalLocationId = uuid.v4();
 		const externalPurposeId = uuid.v4();
 
-		await this.parameterisedQuery`
-			INSERT INTO nodes
-				(id, budget_id, path)
-			VALUES
-				(${internalLocationId}, ${budgetId}, ''),
-				(${internalPurposeId}, ${budgetId}, ''),
-				(${externalLocationId}, ${budgetId}, ''),
-				(${externalPurposeId}, ${budgetId}, '')`;
-
-		await this.parameterisedQuery`
-			INSERT INTO node_versions
-				(node_id, version_number,  name, opening_date, closing_date, is_most_recent, is_deleted, changeset_id)
-			VALUES
-				(${internalLocationId}, 1, 'Internal Location', NOW(), NULL, true, false, ${changesetId}),
-				(${internalPurposeId}, 1, 'Internal Purpose', NOW(), NULL, true, false, ${changesetId}),
-				(${externalLocationId}, 1, 'External Location', NOW(), NULL, true, false, ${changesetId}),
-				(${externalPurposeId}, 1, 'External Purpose', NOW(), NULL, true, false, ${changesetId})`;
+		await this.createRootNode(changesetId, {budgetId, nodeId: internalLocationId, name: 'Internal Location'});
+		await this.createRootNode(changesetId, {budgetId, nodeId: internalPurposeId, name: 'Internal Purpose'});
+		await this.createRootNode(changesetId, {budgetId, nodeId: externalLocationId, name: 'External Location'});
+		await this.createRootNode(changesetId, {budgetId, nodeId: externalPurposeId, name: 'External Purpose'});
 
 		await this.parameterisedQuery`
 			INSERT INTO roots
@@ -105,17 +94,17 @@ export async function updateBudget(
 		await acquireLockOnBudget(this, budgetId);
 		const changesetId = await createBudgetChangeset(this, userId, budgetId, BudgetChangesetHint.UpdateBudget);
 
+		const {rows: [prev]} = await this.parameterisedQuery`
+			UPDATE budget_versions
+			SET is_most_recent = false
+			WHERE budget_id = ${budgetId} AND is_most_recent = true
+			RETURNING *`;
+
 		await this.parameterisedQuery`
-			WITH prev AS (
-				UPDATE budget_versions
-				SET is_most_recent = false
-				WHERE budget_id = ${budgetId} AND is_most_recent = true
-				RETURNING *
-			)
 			INSERT INTO budget_versions
 				(budget_id, version_number, name, is_deleted, is_most_recent, changeset_id)
 			VALUES
-				(${budgetId}, prev.version_number + 1, ${name}, false, true, ${changesetId})`;
+				(${budgetId}, ${prev.version_number + 1}, ${name}, false, true, ${changesetId})`;
 	});
 }
 
@@ -129,17 +118,16 @@ export async function deleteBudget(
 		await acquireLockOnBudget(this, budgetId);
 		const changesetId = await createBudgetChangeset(this, userId, budgetId, BudgetChangesetHint.DeleteBudget);
 
+		const {rows: [prev]} = await this.parameterisedQuery`
+			UPDATE budget_versions
+			SET is_most_recent = false
+			WHERE budget_id = ${budgetId} AND is_most_recent = true
+			RETURNING *`;
+
 		await this.parameterisedQuery`
-			WITH prev AS (
-				UPDATE budget_versions
-				SET is_most_recent = false
-				WHERE budget_id = ${budgetId} AND is_most_recent = true
-				RETURNING *
-			)
 			INSERT INTO budget_versions
 				(budget_id, version_number, name, is_deleted, is_most_recent, changeset_id)
-			VALUES
-				(${budgetId}, prev.version_number + 1, prev.name, true, true, ${changesetId})`;
+			VALUES (${budgetId}, ${prev.version_number + 1}, ${prev.name}, true, true, ${changesetId})`;
 	});
 }
 

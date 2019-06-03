@@ -17,13 +17,14 @@ CREATE OR REPLACE VIEW current_budgets AS
         AND v.is_deleted = false;
 
 CREATE OR REPLACE VIEW current_nodes AS
-    SELECT *
+    SELECT node.*, version.*, parent.id AS parent_id
     FROM
-        nodes n
-        INNER JOIN node_versions v ON n.id = v.node_id
+        nodes node
+        INNER JOIN node_versions version ON node.id = version.node_id
+        LEFT JOIN nodes parent ON parent.label = ltree2text(subpath(node.path, -2, -1)) AND parent.budget_id = node.budget_id
     WHERE
-        v.is_most_recent = true
-        AND v.is_deleted = false;
+        version.is_most_recent = true
+        AND version.is_deleted = false;
 
 CREATE OR REPLACE VIEW current_transactions AS
     SELECT *
